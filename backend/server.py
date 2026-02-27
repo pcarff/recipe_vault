@@ -9,14 +9,19 @@ import zipfile
 import io
 import xml.etree.ElementTree as ET
 
-DB_PATH = '/Users/pcarff/Documents/_RECIPES/MasterCook 15/My Collection/ModernRecipeApp/data/recipes.db'
-UPLOADS_DIR = '/Users/pcarff/Documents/_RECIPES/MasterCook 15/My Collection/ModernRecipeApp/data/images'
+# Get the absolute path to the directory containing server.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+
+DB_PATH = os.path.join(PROJECT_ROOT, 'data', 'recipes.db')
+UPLOADS_DIR = os.path.join(PROJECT_ROOT, 'data', 'images')
 
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 IMAGE_DIRS = [
+    # Legacy hardcoded paths fallback for graceful degradation
+    '/Users/pcarff/Documents/_RECIPES/MasterCook 15/My Collection/Lauras Cookbook 1 (Family Favorites)',
     '/Users/pcarff/Documents/_RECIPES/MasterCook 15/My Collection/Lauras Cookbook 2 (Images Combined)',
-    '/Users/pcarff/Documents/_RECIPES/MasterCook 15/My Collection/Lauras Cookbook 1 (Images Combined)',
     UPLOADS_DIR
 ]
 
