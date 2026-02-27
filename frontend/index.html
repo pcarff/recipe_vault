@@ -572,6 +572,57 @@
             </div>
         </div>
     </div>
+    <!-- Rapid Assigner Modal -->
+    <div id="assignerModal"
+        class="fixed inset-0 z-[80] hidden opacity-0 transition-opacity bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50">
+                <div>
+                    <div class="text-sm font-semibold text-blue-600 tracking-wider uppercase mb-1">Rapid Image Assigner
+                    </div>
+                    <h2 id="assignerRecipeTitle" class="text-3xl font-extrabold text-gray-900 leading-tight">Loading...
+                    </h2>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="loadNextAssignerRecipe()"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-full hover:bg-gray-300 transition-colors">
+                        Skip <span aria-hidden="true">&rarr;</span>
+                    </button>
+                    <button onclick="closeModal('assignerModal')"
+                        class="p-2 text-gray-400 hover:text-gray-600 bg-white rounded-full shadow-sm hover:shadow transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Area -->
+            <div class="px-6 py-4 bg-white border-b border-gray-100">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="assignerSearch"
+                        class="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                        placeholder="Filter unused images by keyword..." oninput="filterAssignerImages()">
+                </div>
+            </div>
+
+            <!-- Image Grid Content -->
+            <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <div id="assignerGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <!-- Images populate here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         let searchTimeout = null;
