@@ -1139,13 +1139,8 @@
 
             const reader = new FileReader();
             reader.onload = async function (e) {
-                const arrayBuffer = e.target.result;
-                const bytes = new Uint8Array(arrayBuffer);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) {
-                    binary += String.fromCharCode(bytes[i]);
-                }
-                const base64Content = window.btoa(binary);
+                // Instantly encodes file to base64 via native browser module
+                const base64Content = e.target.result.split(',')[1];
 
                 try {
                     const res = await fetch('http://localhost:8080/api/import_mz2', {
@@ -1159,16 +1154,16 @@
                         alert(`Successfully imported ${data.imported} recipes into the "${data.cookbook}" cookbook!`);
                         window.location.reload();
                     } else {
-                        alert('Error importing XML / MZ2 file.');
+                        alert(`Error importing XML / MZ2 file. Server responded with Status ${res.status}`);
                     }
                 } catch (err) {
                     console.error('Import error', err);
-                    alert('Error communicating with server.');
+                    alert(`Error communicating with server: ${err.message}`);
                 } finally {
                     document.getElementById('importMz2File').value = '';
                 }
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsDataURL(file);
         }
 
         async function handleRestore(event) {
