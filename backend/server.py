@@ -91,7 +91,22 @@ class RecipeHandler(SimpleHTTPRequestHandler):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT id, title, keywords FROM recipes WHERE image_path IS NULL OR image_path = '' LIMIT 1")
+            parsed = urlparse(self.path)
+            params = parse_qs(parsed.query)
+            exclude_str = params.get('exclude', [''])[0]
+            
+            query = "SELECT id, title, keywords FROM recipes WHERE (image_path IS NULL OR image_path = '')"
+            query_params = []
+            
+            if exclude_str:
+                exclude_ids = [int(x) for x in exclude_str.split(',') if x.strip().isdigit()]
+                if exclude_ids:
+                    placeholders = ','.join(['?' for _ in exclude_ids])
+                    query += f" AND id NOT IN ({placeholders})"
+                    query_params.extend(exclude_ids)
+            
+            query += " LIMIT 1"
+            cursor.execute(query, query_params)
             row = cursor.fetchone()
             recipe = dict(row) if row else None
         except Exception:
@@ -297,16 +312,21 @@ class RecipeHandler(SimpleHTTPRequestHandler):
             except Exception as e:
                 print(e)
                 self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
             return
 
         elif parsed.path == '/api/import_mz2':
             content_length = int(self.headers['Content-Length'])
-            max_bytes = 50 * 1024 * 1024
+            max_bytes = 200 * 1024 * 1024 # 200MB limit for MZ2 zips
             if content_length > max_bytes:
                 self.send_response(413) # Payload Too Large
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': 'File exceeds 200MB limit'}).encode('utf-8'))
                 return
                 
             post_data = self.rfile.read(content_length)
@@ -315,8 +335,26 @@ class RecipeHandler(SimpleHTTPRequestHandler):
                 filename = data.get('filename', 'Imported Cookbook')
                 cookbook_name = filename.replace('.mz2', '').replace('.mx2', '').strip()
                 
-                # Decode
-                file_content = base64.b64decode(data['content']).decode('ISO-8859-1', errors='ignore')
+                # Decode and extract ZIP if it's an .mz2
+                file_content_bytes = base64.b64decode(data['content'])
+                try:
+                    with zipfile.ZipFile(io.BytesIO(file_content_bytes), 'r') as zipf:
+                        xml_filename = None
+                        for info in zipf.infolist():
+                            if info.filename.lower().endswith(('.mx2', '.mz2', '.xml')):
+                                xml_filename = info.filename
+                            elif info.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                                out_path = os.path.join(UPLOADS_DIR, info.filename)
+                                os.makedirs(os.path.dirname(out_path), exist_ok=True)
+                                with open(out_path, 'wb') as f:
+                                    f.write(zipf.read(info.filename))
+                        if xml_filename:
+                            file_content = zipf.read(xml_filename).decode('ISO-8859-1', errors='ignore')
+                        else:
+                            raise Exception("No XML or MX2 file found inside MZ2 package")
+                except zipfile.BadZipFile:
+                    # Fallback for plain XML text
+                    file_content = file_content_bytes.decode('ISO-8859-1', errors='ignore')
                 
                 # Cleanup and parse
                 file_content = file_content.replace('<?xml version="1.0" standalone="yes" encoding="ISO-8859-1"?>', '')
@@ -338,6 +376,7 @@ class RecipeHandler(SimpleHTTPRequestHandler):
                 for recipe in recipes:
                     title = recipe.get('name', 'Unknown Recipe')
                     author = recipe.get('author', '')
+                    img_filename = recipe.get('img', '')
                     
                     yld = ''
                     yld_elem = recipe.find('Yield')
@@ -357,7 +396,7 @@ class RecipeHandler(SimpleHTTPRequestHandler):
 
                     cursor.execute(
                         'INSERT INTO recipes (title, author, yield, prep_time, image_path, cookbook_id) VALUES (?, ?, ?, ?, ?, ?)',
-                        (title, author, yld, '', '', cookbook_id)
+                        (title, author, yld, '', img_filename, cookbook_id)
                     )
                     recipe_id = cursor.lastrowid
                     
@@ -393,7 +432,10 @@ class RecipeHandler(SimpleHTTPRequestHandler):
                 if 'conn' in locals():
                     conn.rollback()
                 self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
             finally:
                 if 'conn' in locals():
                     conn.close()
@@ -442,10 +484,13 @@ class RecipeHandler(SimpleHTTPRequestHandler):
 
         elif parsed.path == '/api/recipes':
             content_length = int(self.headers['Content-Length'])
-            max_bytes = 10 * 1024 * 1024 # 10MB limit
+            max_bytes = 50 * 1024 * 1024 # 50MB limit
             if content_length > max_bytes:
                  self.send_response(413) # Payload too large
+                 self.send_header('Content-Type', 'application/json')
+                 self.send_header('Access-Control-Allow-Origin', '*')
                  self.end_headers()
+                 self.wfile.write(json.dumps({'status': 'error', 'message': 'Payload exceeds 50MB limit'}).encode('utf-8'))
                  return
 
             post_data = self.rfile.read(content_length)
@@ -558,10 +603,13 @@ class RecipeHandler(SimpleHTTPRequestHandler):
 
             recipe_id = int(path_parts[-1])
             content_length = int(self.headers['Content-Length'])
-            max_bytes = 10 * 1024 * 1024 # 10MB limit
+            max_bytes = 50 * 1024 * 1024 # 50MB limit
             if content_length > max_bytes:
                  self.send_response(413) # Payload too large
+                 self.send_header('Content-Type', 'application/json')
+                 self.send_header('Access-Control-Allow-Origin', '*')
                  self.end_headers()
+                 self.wfile.write(json.dumps({'status': 'error', 'message': 'Payload exceeds 50MB limit'}).encode('utf-8'))
                  return
 
             post_data = self.rfile.read(content_length)

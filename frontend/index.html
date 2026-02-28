@@ -217,9 +217,9 @@
 
                         <select id="sortSelect" onchange="loadRecipes()"
                             class="border rounded-full py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-gray-700 cursor-pointer flex-1 sm:w-32 truncate">
+                            <option value="title_asc">Sort: A-Z</option>
                             <option value="recent">Sort: Newest</option>
                             <option value="oldest">Sort: Oldest</option>
-                            <option value="title_asc">Sort: A-Z</option>
                             <option value="title_desc">Sort: Z-A</option>
                         </select>
                     </div>
@@ -704,8 +704,10 @@
 
         let unassignedImages = [];
         let currentAssignerRecipeId = null;
+        let skippedAssignerIds = new Set();
 
         async function openAssigner() {
+            skippedAssignerIds = new Set(); // Reset skips on fresh open
             try {
                 const res = await fetch('http://localhost:8080/api/images/unassigned');
                 unassignedImages = await res.json();
@@ -716,18 +718,32 @@
         }
 
         async function loadNextAssignerRecipe() {
+            // If we have a current recipe, add it to skipped before loading next
+            if (currentAssignerRecipeId) {
+                skippedAssignerIds.add(currentAssignerRecipeId);
+            }
+
             document.getElementById('assignerRecipeTitle').innerText = 'Loading next recipe...';
             document.getElementById('assignerGrid').innerHTML = '';
             currentAssignerRecipeId = null;
 
             try {
-                const res = await fetch('http://localhost:8080/api/recipes/missing_image');
+                let url = 'http://localhost:8080/api/recipes/missing_image';
+                if (skippedAssignerIds.size > 0) {
+                    url += '?exclude=' + Array.from(skippedAssignerIds).join(',');
+                }
+                const res = await fetch(url);
                 const data = await res.json();
 
                 if (!data.recipe) {
-                    document.getElementById('assignerRecipeTitle').innerText = '🎉 All recipes have an image!';
+                    if (skippedAssignerIds.size > 0) {
+                        document.getElementById('assignerRecipeTitle').innerHTML =
+                            `⏭️ Skipped ${skippedAssignerIds.size} recipe(s). <button onclick="skippedAssignerIds.clear(); currentAssignerRecipeId = null; loadNextAssignerRecipe();" style="background:#3b82f6;color:white;padding:4px 14px;border-radius:6px;margin-left:8px;font-size:14px;cursor:pointer;">Start Over</button>`;
+                    } else {
+                        document.getElementById('assignerRecipeTitle').innerText = '🎉 All recipes have an image!';
+                    }
                     document.getElementById('assignerSearch').value = '';
-                    filterAssignerImages(); // Show all remaining unused images
+                    filterAssignerImages();
                     return;
                 }
 
@@ -1021,7 +1037,14 @@
             modal.classList.add('opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');
-                if (document.querySelectorAll('.fixed.inset-0:not(.hidden)').length === 0) {
+
+                const modalIds = ['recipeModal', 'editModal', 'assignerModal', 'manageCatsModal', 'manageCookbooksModal'];
+                const activeModals = modalIds.filter(modalId => {
+                    const el = document.getElementById(modalId);
+                    return el && !el.classList.contains('hidden');
+                });
+
+                if (activeModals.length === 0) {
                     document.body.style.overflow = 'auto'; // Re-enable background scrolling if ALL modals are closed
                 }
             }, 300);
