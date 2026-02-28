@@ -214,9 +214,167 @@ class RecipeHandler(SimpleHTTPRequestHandler):
         conn.close()
         self.send_json(recipe)
 
+    def _build_mx2_xml(self, cookbook_id=None):
+        """Build an MX2 XML string from recipes in the database."""
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Get cookbook name for the summary
+        cookbook_name = 'RecipeVault Export'
+        if cookbook_id:
+            cursor.execute('SELECT name FROM cookbooks WHERE id = ?', (cookbook_id,))
+            row = cursor.fetchone()
+            if row:
+                cookbook_name = row['name']
+
+        # Get recipes
+        if cookbook_id:
+            cursor.execute('SELECT * FROM recipes WHERE cookbook_id = ?', (cookbook_id,))
+        else:
+            cursor.execute('SELECT * FROM recipes')
+        recipes = cursor.fetchall()
+
+        # Build XML manually for proper formatting
+        lines = []
+        lines.append('<?xml version="1.0" standalone="yes" encoding="ISO-8859-1"?>')
+        lines.append('<!DOCTYPE mx2 SYSTEM "mx2.dtd">')
+        lines.append(f'<mx2 source="RecipeVault" date="">')
+        lines.append(f'<Summ><Nam>{self._xml_escape(cookbook_name)}</Nam></Summ>')
+
+        image_filenames = []
+
+        for recipe in recipes:
+            recipe = dict(recipe)
+            recipe_id = recipe['id']
+            title = self._xml_escape(recipe.get('title', ''))
+            author = self._xml_escape(recipe.get('author', ''))
+            img = recipe.get('image_path', '') or ''
+
+            if img:
+                image_filenames.append(img)
+
+            # RcpE element with attributes
+            img_attr = f' img="{self._xml_escape(img)}"' if img else ''
+            lines.append(f'<RcpE name="{title}" author="{author}"{img_attr}>')
+
+            # Categories
+            cursor.execute("""
+                SELECT c.name FROM categories c
+                JOIN recipe_categories rc ON c.id = rc.category_id
+                WHERE rc.recipe_id = ?
+            """, (recipe_id,))
+            cats = cursor.fetchall()
+            if cats:
+                lines.append('<CatS>')
+                for cat in cats:
+                    lines.append(f'<CatT>{self._xml_escape(cat["name"])}</CatT>')
+                lines.append('</CatS>')
+
+            # Ingredients
+            cursor.execute('SELECT amount, unit, item FROM ingredients WHERE recipe_id = ?', (recipe_id,))
+            ingredients = cursor.fetchall()
+            for ing in ingredients:
+                qty = self._xml_escape(ing['amount'] or '')
+                unit = self._xml_escape(ing['unit'] or '')
+                name = self._xml_escape(ing['item'] or '')
+                lines.append(f'<IngR name="{name}" unit="{unit}" qty="{qty}" code="">')
+                lines.append('</IngR>')
+
+            # Directions
+            cursor.execute('SELECT text FROM instructions WHERE recipe_id = ? ORDER BY step_number', (recipe_id,))
+            steps = cursor.fetchall()
+            if steps:
+                lines.append('<DirS>')
+                for step in steps:
+                    lines.append(f'<DirT>{self._xml_escape(step["text"])}</DirT>')
+                lines.append('</DirS>')
+
+            # Yield
+            yld = recipe.get('yield', '') or ''
+            if yld:
+                lines.append(f'<Yield unit="{self._xml_escape(yld)}" qty="1"/>')
+
+            # Prep time
+            prep = recipe.get('prep_time', '') or ''
+            if prep:
+                lines.append(f'<PrpT elapsed="{self._xml_escape(prep)}"/>')
+
+            lines.append('</RcpE>')
+
+        lines.append('</mx2>')
+        conn.close()
+        return '\n'.join(lines), image_filenames, cookbook_name
+
+    def _xml_escape(self, text):
+        """Escape special XML characters."""
+        if not text:
+            return ''
+        text = str(text)
+        text = text.replace('&', '&amp;')
+        text = text.replace('<', '&lt;')
+        text = text.replace('>', '&gt;')
+        text = text.replace('"', '&quot;')
+        text = text.replace("'", '&apos;')
+        return text
+
+    def export_mx2(self):
+        """Export recipes as an MX2 XML file download."""
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        cookbook_id = params.get('cookbook', [None])[0]
+
+        xml_content, _, cookbook_name = self._build_mx2_xml(cookbook_id)
+        safe_name = cookbook_name.replace(' ', '_')
+        xml_bytes = xml_content.encode('ISO-8859-1', errors='replace')
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/xml')
+        self.send_header('Content-Disposition', f'attachment; filename="{safe_name}.mx2"')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Length', str(len(xml_bytes)))
+        self.end_headers()
+        self.wfile.write(xml_bytes)
+
+    def export_mz2(self):
+        """Export recipes as an MZ2 ZIP file (XML + images) download."""
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        cookbook_id = params.get('cookbook', [None])[0]
+
+        xml_content, image_filenames, cookbook_name = self._build_mx2_xml(cookbook_id)
+        safe_name = cookbook_name.replace(' ', '_')
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Add MX2 XML file
+            zipf.writestr(f'{safe_name}.mx2', xml_content.encode('ISO-8859-1', errors='replace'))
+
+            # Add referenced images
+            for img_name in image_filenames:
+                for d in IMAGE_DIRS:
+                    img_path = os.path.join(d, img_name)
+                    if os.path.exists(img_path):
+                        zipf.write(img_path, arcname=img_name)
+                        break
+
+        zip_bytes = zip_buffer.getvalue()
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/zip')
+        self.send_header('Content-Disposition', f'attachment; filename="{safe_name}.mz2"')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Length', str(len(zip_bytes)))
+        self.end_headers()
+        self.wfile.write(zip_bytes)
+
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path == '/api/categories':
+        if parsed.path == '/api/export/mx2':
+            self.export_mx2()
+        elif parsed.path == '/api/export/mz2':
+            self.export_mz2()
+        elif parsed.path == '/api/categories':
             self.get_categories()
         elif parsed.path == '/api/cookbooks':
             self.get_cookbooks()
@@ -320,13 +478,13 @@ class RecipeHandler(SimpleHTTPRequestHandler):
 
         elif parsed.path == '/api/import_mz2':
             content_length = int(self.headers['Content-Length'])
-            max_bytes = 200 * 1024 * 1024 # 200MB limit for MZ2 zips
+            max_bytes = 500 * 1024 * 1024 # 500MB limit for MZ2 zips
             if content_length > max_bytes:
                 self.send_response(413) # Payload Too Large
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
-                self.wfile.write(json.dumps({'status': 'error', 'message': 'File exceeds 200MB limit'}).encode('utf-8'))
+                self.wfile.write(json.dumps({'status': 'error', 'message': 'File exceeds 500MB limit'}).encode('utf-8'))
                 return
                 
             post_data = self.rfile.read(content_length)
@@ -386,7 +544,7 @@ class RecipeHandler(SimpleHTTPRequestHandler):
                     rcp_categories = set()
                     cat_divs = recipe.findall('.//CatS/CatT')
                     for cat in cat_divs:
-                        c_name = cat.get('name', '').strip()
+                        c_name = (cat.text or cat.get('name', '')).strip()
                         if c_name:
                             cursor.execute('INSERT OR IGNORE INTO categories (name) VALUES (?)', (c_name,))
                             cursor.execute('SELECT id FROM categories WHERE name = ?', (c_name,))
@@ -680,9 +838,11 @@ class RecipeHandler(SimpleHTTPRequestHandler):
              conn = sqlite3.connect(DB_PATH)
              cursor = conn.cursor()
              try:
+                 cursor.execute('DELETE FROM ingredients WHERE recipe_id IN (SELECT id FROM recipes WHERE cookbook_id = ?)', (cb_id,))
+                 cursor.execute('DELETE FROM instructions WHERE recipe_id IN (SELECT id FROM recipes WHERE cookbook_id = ?)', (cb_id,))
+                 cursor.execute('DELETE FROM recipe_categories WHERE recipe_id IN (SELECT id FROM recipes WHERE cookbook_id = ?)', (cb_id,))
+                 cursor.execute('DELETE FROM recipes WHERE cookbook_id = ?', (cb_id,))
                  cursor.execute('DELETE FROM cookbooks WHERE id = ?', (cb_id,))
-                 # Move orphaned recipes to default cookbook (ID 1)
-                 cursor.execute('UPDATE recipes SET cookbook_id = 1 WHERE cookbook_id = ?', (cb_id,))
                  conn.commit()
                  self.send_json({"status": "success"})
              except Exception as e:

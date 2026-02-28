@@ -1,0 +1,96 @@
+nohup: ignoring input
+127.0.0.1 - - [27/Feb/2026 16:26:12] "GET /api/export/mx2 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:26:35] "GET /api/export/mz2 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /api/cookbooks HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /api/categories HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /api/recipes?sort=title_asc&offset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/ HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53294)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 316, in _handle_request_noblock
+    self.process_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 347, in process_request
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/http/server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/pcarff/workspaces/recipe_vault/backend/server.py", line 430, in do_GET
+    with open(filepath, 'rb') as f:
+IsADirectoryError: [Errno 21] Is a directory: '/home/pcarff/workspaces/recipe_vault/data/images/'
+----------------------------------------
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/AhiPokewithRoastedSesameSeedsSamChoy.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/AlaskanSpotPrawnswithApricotCilantroSauce.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/AntipastoChoppedSalad.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/ArtichokeGratin.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/ArtichokeNibbles.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/ArtichokeParmesanDipwithCayennePepper.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/ArtichokecakeswithCajunRemoulade.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/AsianGlazedCopperRiverSalmonwithTropicalFruitSalsa.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:11] "GET /images/AsianPeanutSlaw.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:12] "GET /images/AsianPestoMingTsai.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:12] "GET /images/AsparagusSmokedSalmonwithLemonRieslingSabayon.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 16:27:20] "GET /api/recipes?sort=title_asc&cookbook=5&offset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /api/cookbooks HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /api/categories HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /api/recipes?sort=title_asc&offset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/ HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 46862)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 316, in _handle_request_noblock
+    self.process_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 347, in process_request
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/http/server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/pcarff/workspaces/recipe_vault/backend/server.py", line 430, in do_GET
+    with open(filepath, 'rb') as f:
+IsADirectoryError: [Errno 21] Is a directory: '/home/pcarff/workspaces/recipe_vault/data/images/'
+----------------------------------------
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/30minuteCreamySesameMisoRamenwithCrispyMushroomsHalfBakedHarvest.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AhiPokeParfaitLisaDahl.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AhiPokewithRoastedSesameSeedsSamChoy.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AlaskanSpotPrawnswithApricotCilantroSauce.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AntipastoChoppedSalad.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AppleBundtCakewithCreamCheeseSwirlandCaramelGlaze.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AppleSpiceLoafCakewithSpicedCreamCheeseFrosting.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/ArtichokeGratin.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/ArtichokeNibbles.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/ArtichokeParmesanDipwithCayennePepper.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/ArtichokecakeswithCajunRemoulade.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AsianGlazedCopperRiverSalmonwithTropicalFruitSalsa.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AsianPeanutSlaw.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AsianPestoMingTsai.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AsianSpiceRubbedRibswithPineappleGingerBBQSauceandBlackandWhiteSesameSeedsBobbyF.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:20] "GET /images/AsparagusSmokedSalmonwithLemonRieslingSabayon.JPG HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /api/recipes?sort=title_asc&cookbook=6&offset=0 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LEMONGARLICSHRIMPANDGRITS.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LemonGingerChickenwithPineappleMangoSalsaChefZouheir.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LemonPoppySeedCakeInaGarten.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LemonYogurtCakeInaGarten.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LemonThymeDressing.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LemonyChickenSaltimboccaCookingLight.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LimoncelloLemonade.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LittleSmokiesinRaspberryChipotleBourbonSauce.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/LusciousOrangePannaCottaSouthernLiving.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/M80RockShrimpBrianMalarkey.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:25] "GET /images/MagicGreenBeansTheGirlandtheGoatStephanieIzard.png HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:33] "GET /api/recipes/1255 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:37] "GET /api/recipes/1260 HTTP/1.1" 200 -
+127.0.0.1 - - [27/Feb/2026 18:19:40] "GET /api/recipes/1255 HTTP/1.1" 200 -

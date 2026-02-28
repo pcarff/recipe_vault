@@ -8,6 +8,50 @@
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @media print {
+            body>*:not(#recipeModal) {
+                display: none !important;
+            }
+
+            #recipeModal {
+                position: static !important;
+                opacity: 1 !important;
+            }
+
+            #recipeModal>div:first-child {
+                display: none !important;
+            }
+
+            /* backdrop */
+            #recipeModal .fixed.inset-0.z-10 {
+                position: static !important;
+                overflow: visible !important;
+            }
+
+            #recipeModal .sm\:my-8 {
+                margin: 0 !important;
+                max-width: 100% !important;
+                box-shadow: none !important;
+            }
+
+            #recipeModal button {
+                display: none !important;
+            }
+
+            #recipeModal img {
+                max-height: 300px;
+                object-fit: cover;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            @page {
+                margin: 0.75in;
+            }
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
         body {
@@ -249,6 +293,28 @@
                             <span class="mr-1">📤</span> Import
                         </button>
 
+                        <!-- Export Dropdown -->
+                        <div class="relative" id="exportDropdownContainer">
+                            <button onclick="document.getElementById('exportDropdown').classList.toggle('hidden')"
+                                class="border border-teal-200 text-teal-700 hover:bg-teal-50 px-3 py-2 rounded-full text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
+                                title="Export Cookbook">
+                                <span class="mr-1">📥</span> Export
+                            </button>
+                            <div id="exportDropdown"
+                                class="hidden absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                                <div class="py-1">
+                                    <button onclick="exportRecipes('mx2')"
+                                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                        <span class="mr-2">📄</span> Export as MX2 (XML only)
+                                    </button>
+                                    <button onclick="exportRecipes('mz2')"
+                                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                        <span class="mr-2">📦</span> Export as MZ2 (XML + Images)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <input type="file" id="restoreFile" accept=".zip" class="hidden"
                             onchange="handleRestore(event)">
                         <button onclick="document.getElementById('restoreFile').click()"
@@ -336,6 +402,7 @@
                                 </path>
                             </svg>
                         </button>
+
                         <button onclick="closeModal('recipeModal')"
                             class="bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
                             title="Close">
@@ -694,7 +761,7 @@
         }
 
         async function deleteCookbook(id) {
-            if (!confirm("Are you sure you want to delete this cookbook? Recipes will be moved to Master Cookbook.")) return;
+            if (!confirm("Are you sure you want to delete this cookbook? All recipes in this cookbook will be permanently deleted.")) return;
             try {
                 const res = await fetch(`http://localhost:8080/api/cookbooks/${id}`, { method: 'DELETE' });
                 if (res.ok) { await loadCookbooks(); loadRecipes(); }
@@ -1207,6 +1274,27 @@
             } catch (e) { alert('Error saving recipe.'); console.error(e); }
             finally { btn.disabled = false; txt.innerText = 'Save Recipe'; }
         }
+        function exportRecipes(format) {
+            document.getElementById('exportDropdown').classList.add('hidden');
+            const cookbook = document.getElementById('cookbookSelect').value;
+            let url = `http://localhost:8080/api/export/${format}`;
+            if (cookbook) url += `?cookbook=${cookbook}`;
+            window.location.href = url;
+        }
+
+        function printCurrentRecipe() {
+            window.print();
+        }
+
+        // Close export dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            const container = document.getElementById('exportDropdownContainer');
+            const dropdown = document.getElementById('exportDropdown');
+            if (container && !container.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
         async function handleImportMz2(event) {
             const file = event.target.files[0];
             if (!file) return;
